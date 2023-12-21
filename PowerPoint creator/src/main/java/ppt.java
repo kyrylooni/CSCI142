@@ -25,13 +25,17 @@ public class ppt {
 5. Create a PowerPoint based on the Json file’s nodes
      */
 
+    
+
     //create a new JSON file method
     public static void createJsonFile() {
         Scanner input = new Scanner(System.in);
+
         System.out.println("Enter the number of slides you want to create: ");
         int slideCount = input.nextInt();
-        System.out.println("Enter the title of your presentation: ");
-        String presentationTitle = input.next();
+
+        // Title of the presentation
+        String presentationTitle = "War In Ukraine";
 
         try {
             // Create a new JSON structure
@@ -41,19 +45,23 @@ public class ppt {
 
             // Add presentation details
             presentation.put("title", presentationTitle);
-            presentation.put("subtitle", "Your Presentation Subtitle");
-            presentation.put("slideCount", slideCount);  // Set the number of slides
+            presentation.put("subtitle", "Causes of the war ");
+            presentation.put("slideCount", slideCount);
 
             ArrayNode slides = presentation.putArray("slides");
 
             // Generate content for each slide
-            for (int i = 1; i <= 3; i++) {  // Change 3 to the desired number of slides
+            for (int i = 1; i <= slideCount; i++) {
                 ObjectNode slide = slides.addObject();
                 slide.put("title", "Slide " + i);
 
-                // Generate content for the slide using ChatGPT API
-                String generatedContent = OpenAI.chatGPT("Slide " + i);
-                slide.put("generatedContent", generatedContent);
+                // Generate content for the heading using ChatGPT API
+                String generatedHeading = OpenAI.chatGPT("Heading for Slide " + i + " in " + presentationTitle + " presentation");
+                slide.put("heading", generatedHeading);
+
+                // Generate content for the main using ChatGPT API
+                String generatedMain = OpenAI.chatGPT("Main content for Slide " + i + " in " + presentationTitle + " presentation");
+                slide.put("main", generatedMain);
             }
 
             // Save the JSON to a file
@@ -63,6 +71,38 @@ public class ppt {
 
         } catch (IOException e) {
             System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    public static void createPresentationFromJson() {
+        // Read JSON data from the generated file
+        JsonNode jsonData = readJsonFile("output.json");
+
+        // Create a new PowerPoint presentation
+        XMLSlideShow ppt = new XMLSlideShow();
+
+        // Extract presentation details
+        String presentationTitle = jsonData.get("presentation").get("title").asText();
+        String presentationSubtitle = jsonData.get("presentation").get("subtitle").asText();
+        int slideCount = jsonData.get("presentation").get("slideCount").asInt();
+
+        // Create the title slide
+        XSLFSlide titleSlide = ppt.createSlide();
+        addTitleSlide(titleSlide, presentationTitle, presentationSubtitle);
+
+        // Create and add content slides
+        JsonNode slides = jsonData.get("presentation").get("slides");
+        for (JsonNode slideData : slides) {
+            XSLFSlide contentSlide = ppt.createSlide();
+            addContentSlide(contentSlide, slideData);
+        }
+
+        // Save the PowerPoint presentation to a file
+        try {
+            ppt.write(new FileOutputStream(("presentation.pptx")));
+            System.out.println("PowerPoint presentation created successfully.");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -76,38 +116,37 @@ public class ppt {
         subtitleTextBox.setAnchor(new java.awt.Rectangle(50, 100, 600, 50));
         XSLFTextRun subtitleRun = subtitleTextBox.addNewTextParagraph().addNewTextRun();
         subtitleRun.setText(subtitle);
-
-        // add picture to each slide
-        try {
-            File image = new File("src/main/java/brain.jpg");
-            byte[] picture = org.apache.commons.io.FileUtils.readFileToByteArray(image);
-            XSLFPictureData idx = slide.getSlideShow().addPicture(picture, PictureData.PictureType.JPEG);
-            slide.createPicture(idx);
-        } catch (IOException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
     }
 
     private static void addContentSlide(XSLFSlide slide, JsonNode slideData) {
         String slideTitle = slideData.get("title").asText();
-        JsonNode content = slideData.get("content");
-        String mainContent = content.get("main").asText();
-        String subtitleContent = content.has("subtitle") ? content.get("subtitle").asText() : "";
+        String generatedHeading = slideData.get("heading").asText();
+        String generatedMain = slideData.get("main").asText();
 
         XSLFTextBox titleTextBox = slide.createTextBox();
         titleTextBox.setAnchor(new java.awt.Rectangle(50, 50, 600, 50));
         XSLFTextRun titleRun = titleTextBox.addNewTextParagraph().addNewTextRun();
         titleRun.setText(slideTitle);
 
-        XSLFTextBox subtitleTextBox = slide.createTextBox();
-        subtitleTextBox.setAnchor(new java.awt.Rectangle(50, 100, 600, 50));
-        XSLFTextRun subtitleRun = subtitleTextBox.addNewTextParagraph().addNewTextRun();
-        subtitleRun.setText(subtitleContent);
+        XSLFTextBox headingTextBox = slide.createTextBox();
+        headingTextBox.setAnchor(new java.awt.Rectangle(50, 100, 600, 50));
+        XSLFTextRun headingRun = headingTextBox.addNewTextParagraph().addNewTextRun();
+        headingRun.setText(generatedHeading);
 
         XSLFTextBox contentTextBox = slide.createTextBox();
-        contentTextBox.setAnchor(new java.awt.Rectangle(50, 150, 600, 200));
+        contentTextBox.setAnchor(new java.awt.Rectangle(50, 150, 600, 400));
         XSLFTextRun contentRun = contentTextBox.addNewTextParagraph().addNewTextRun();
-        contentRun.setText(mainContent);
+        contentRun.setText(generatedMain);
     }
 
+    private static JsonNode readJsonFile(String filePath) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readTree(new File(filePath));
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading JSON file: " + e.getMessage());
+        }
+    }
 }
+
+
