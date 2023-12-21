@@ -2,46 +2,64 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Scanner;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.poi.sl.usermodel.PictureData;
 import org.apache.poi.xslf.usermodel.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
+
 public class ppt {
 
-    public static void main(String[] args) {
+    /*
+    TO DO:
+1. Create a new Json file method
+2. Generate content for created JSON file with ChatGPT
+3. Write the generated content of the JSON file
+4. Parse the JSON file
+5. Create a PowerPoint based on the Json file’s nodes
+     */
+
+    //create a new JSON file method
+    public static void createJsonFile() {
+        Scanner input = new Scanner(System.in);
+        System.out.println("Enter the number of slides you want to create: ");
+        int slideCount = input.nextInt();
+        System.out.println("Enter the title of your presentation: ");
+        String presentationTitle = input.next();
+
         try {
-            // Read data from the JSON file
+            // Create a new JSON structure
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonData = mapper.readValue(new File("/src/main/java/prompt_test.json"), JsonNode.class);
-            JsonNode presentation = jsonData.get("presentation");
+            ObjectNode jsonData = JsonNodeFactory.instance.objectNode();
+            ObjectNode presentation = jsonData.putObject("presentation");
 
-            // Extract presentation details
-            String presentationTitle = presentation.get("title").asText();
-            String presentationSubtitle = presentation.get("subtitle").asText();
-            int slideCount = presentation.get("slideCount").asInt();
-            JsonNode slides = presentation.get("slides");
+            // Add presentation details
+            presentation.put("title", presentationTitle);
+            presentation.put("subtitle", "Your Presentation Subtitle");
+            presentation.put("slideCount", slideCount);  // Set the number of slides
 
-            // Create a new PowerPoint presentation
-            XMLSlideShow ppt = new XMLSlideShow();
+            ArrayNode slides = presentation.putArray("slides");
 
-            // Add title slide
-            XSLFSlide titleSlide = ppt.createSlide();
-            addTitleSlide(titleSlide, presentationTitle, presentationSubtitle);
+            // Generate content for each slide
+            for (int i = 1; i <= 3; i++) {  // Change 3 to the desired number of slides
+                ObjectNode slide = slides.addObject();
+                slide.put("title", "Slide " + i);
 
-            // Add slides to the presentation
-            for (JsonNode slide : slides) {
-                XSLFSlide contentSlide = ppt.createSlide();
-                addContentSlide(contentSlide, slide);
+                // Generate content for the slide using ChatGPT API
+                String generatedContent = OpenAI.chatGPT("Slide " + i);
+                slide.put("generatedContent", generatedContent);
             }
 
-            // Save the presentation to a file
-            try (FileOutputStream out = new FileOutputStream("output.pptx")) {
-                ppt.write(out);
-            }
+            // Save the JSON to a file
+            mapper.writerWithDefaultPrettyPrinter().writeValue(new File("output.json"), jsonData);
 
-            System.out.println("PowerPoint presentation created successfully.");
+            System.out.println("JSON file created successfully.");
 
         } catch (IOException e) {
             System.out.println("Error: " + e.getMessage());
@@ -91,4 +109,5 @@ public class ppt {
         XSLFTextRun contentRun = contentTextBox.addNewTextParagraph().addNewTextRun();
         contentRun.setText(mainContent);
     }
+
 }
