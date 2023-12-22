@@ -11,6 +11,8 @@ import java.net.URL;
 public class OpenAI {
         private static final String apiKey = System.getenv("OPENAI_API_KEY");
         public static String chatGPT(String prompt) throws IOException {
+            //int MAX_TOKENS = 100;
+
             String url = "https://api.openai.com/v1/chat/completions";
             String model = "gpt-3.5-turbo";
 
@@ -22,7 +24,7 @@ public class OpenAI {
                 connection.setRequestProperty("Content-Type", "application/json");
 
                 // The request body
-                String body = "{\"model\": \"" + model + "\", \"messages\": [{\"role\": \"user\", \"content\": \"" + prompt + "\"}]}";
+                String body = "{\"model\": \"" + model + "\", \"messages\": [{\"role\": \"user\", \"content\": \"" + prompt + "\"}] }";
                 connection.setDoOutput(true);
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
                 writer.write(body);

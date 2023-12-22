@@ -31,11 +31,12 @@ public class ppt {
     public static void createJsonFile() {
         Scanner input = new Scanner(System.in);
 
+        // Title of the presentation
+        System.out.println("Enter the title of the presentation: ");
+        String presentationTitle = input.nextLine();
+
         System.out.println("Enter the number of slides you want to create: ");
         int slideCount = input.nextInt();
-
-        // Title of the presentation
-        String presentationTitle = "War In Ukraine";
 
         try {
             // Create a new JSON structure
@@ -45,27 +46,31 @@ public class ppt {
 
             // Add presentation details
             presentation.put("title", presentationTitle);
-            presentation.put("subtitle", "Causes of the war ");
             presentation.put("slideCount", slideCount);
+            presentation.put("subtitle", OpenAI.chatGPT("Subtitle for " + presentationTitle + " presentation"));
+
 
             ArrayNode slides = presentation.putArray("slides");
+            int numOfWords = 100;
 
             // Generate content for each slide
             for (int i = 1; i <= slideCount; i++) {
                 ObjectNode slide = slides.addObject();
                 slide.put("title", "Slide " + i);
 
+
                 // Generate content for the heading using ChatGPT API
-                String generatedHeading = OpenAI.chatGPT("Heading for Slide " + i + " in " + presentationTitle + " presentation");
-                slide.put("heading", generatedHeading);
+                //String generatedHeading = OpenAI.chatGPT("Heading for Slide  in" + presentationTitle + " presentation");
+                //slide.put("heading", generatedHeading);
 
                 // Generate content for the main using ChatGPT API
-                String generatedMain = OpenAI.chatGPT("Main content for Slide " + i + " in " + presentationTitle + " presentation");
+                String generatedMain = OpenAI.chatGPT("Main content for Slide" + i + "in" + presentationTitle + " presentation with maximum number of " + numOfWords + " words per slide");
                 slide.put("main", generatedMain);
+
             }
 
             // Save the JSON to a file
-            mapper.writerWithDefaultPrettyPrinter().writeValue(new File("output.json"), jsonData);
+            mapper.writerWithDefaultPrettyPrinter().writeValue(new File("src/main/java/output.json"), jsonData);
 
             System.out.println("JSON file created successfully.");
 
@@ -76,7 +81,7 @@ public class ppt {
 
     public static void createPresentationFromJson() {
         // Read JSON data from the generated file
-        JsonNode jsonData = readJsonFile("output.json");
+        JsonNode jsonData = readJsonFile("src/main/java/output.json");
 
         // Create a new PowerPoint presentation
         XMLSlideShow ppt = new XMLSlideShow();
@@ -99,7 +104,7 @@ public class ppt {
 
         // Save the PowerPoint presentation to a file
         try {
-            ppt.write(new FileOutputStream(("presentation.pptx")));
+            ppt.write(new FileOutputStream("src/main/java/presentation.pptx"));
             System.out.println("PowerPoint presentation created successfully.");
         } catch (IOException e) {
             e.printStackTrace();
@@ -120,7 +125,7 @@ public class ppt {
 
     private static void addContentSlide(XSLFSlide slide, JsonNode slideData) {
         String slideTitle = slideData.get("title").asText();
-        String generatedHeading = slideData.get("heading").asText();
+        ///String generatedHeading = slideData.get("heading").asText();
         String generatedMain = slideData.get("main").asText();
 
         XSLFTextBox titleTextBox = slide.createTextBox();
@@ -128,11 +133,12 @@ public class ppt {
         XSLFTextRun titleRun = titleTextBox.addNewTextParagraph().addNewTextRun();
         titleRun.setText(slideTitle);
 
+        /*
         XSLFTextBox headingTextBox = slide.createTextBox();
         headingTextBox.setAnchor(new java.awt.Rectangle(50, 100, 600, 50));
         XSLFTextRun headingRun = headingTextBox.addNewTextParagraph().addNewTextRun();
         headingRun.setText(generatedHeading);
-
+*/
         XSLFTextBox contentTextBox = slide.createTextBox();
         contentTextBox.setAnchor(new java.awt.Rectangle(50, 150, 600, 400));
         XSLFTextRun contentRun = contentTextBox.addNewTextParagraph().addNewTextRun();
